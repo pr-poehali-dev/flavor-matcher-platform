@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import JSZip from 'jszip';
 import Icon from '@/components/ui/icon';
 
 interface Recipe {
@@ -252,8 +253,7 @@ const difficultyColors: Record<string, string> = {
   'Сложный': 'bg-red-50 text-red-700 border border-red-200',
 };
 
-function exportRecipePDF(recipe: Recipe) {
-  const date = new Date().toLocaleDateString('ru-RU');
+function buildRecipeHTML(recipe: Recipe, date: string): string {
   const html = `
     <!DOCTYPE html>
     <html lang="ru">
@@ -356,6 +356,12 @@ function exportRecipePDF(recipe: Recipe) {
     </body>
     </html>
   `;
+  return html;
+}
+
+function exportRecipePDF(recipe: Recipe) {
+  const date = new Date().toLocaleDateString('ru-RU');
+  const html = buildRecipeHTML(recipe, date);
   const win = window.open('', '_blank');
   if (!win) return;
   win.document.write(html);
@@ -364,19 +370,82 @@ function exportRecipePDF(recipe: Recipe) {
   setTimeout(() => { win.print(); }, 600);
 }
 
+async function exportBatchZip(selected: Recipe[]) {
+  const date = new Date().toLocaleDateString('ru-RU');
+  const zip = new JSZip();
+  const folder = zip.folder('AromaSelect_Рецептуры');
+  selected.forEach((recipe) => {
+    const html = buildRecipeHTML(recipe, date);
+    const safeName = recipe.name.replace(/[^а-яёa-z0-9_\- ]/gi, '_');
+    folder!.file(`${safeName}.html`, html);
+  });
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `AromaSelect_Рецептуры_${date.replace(/\./g, '-')}.zip`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function RecipesSection() {
   const [activeCategory, setActiveCategory] = useState('Все');
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number[]>([]);
+  const [downloading, setDownloading] = useState(false);
 
   const categories = ['Все', ...Array.from(new Set(recipes.map((r) => r.category)))];
   const filtered = activeCategory === 'Все' ? recipes : recipes.filter((r) => r.category === activeCategory);
 
+  const toggleSelect = (id: number) =>
+    setSelected((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+
+  const selectAll = () =>
+    setSelected(filtered.map((r) => r.id));
+
+  const clearAll = () => setSelected([]);
+
+  const handleBatchDownload = async () => {
+    setDownloading(true);
+    const toExport = recipes.filter((r) => selected.includes(r.id));
+    await exportBatchZip(toExport);
+    setDownloading(false);
+  };
+
   return (
     <section className="py-12 px-6 max-w-7xl mx-auto">
-      <div className="mb-8 animate-fade-in-up">
-        <div className="section-label mb-2">База знаний</div>
-        <h2 className="text-3xl font-semibold text-[hsl(var(--navy))]">Библиотека рецептур</h2>
-        <p className="text-muted-foreground mt-1 text-sm">Готовые рецептуры и комбинации ароматизаторов</p>
+      <div className="flex items-end justify-between mb-8 animate-fade-in-up flex-wrap gap-4">
+        <div>
+          <div className="section-label mb-2">База знаний</div>
+          <h2 className="text-3xl font-semibold text-[hsl(var(--navy))]">Библиотека рецептур</h2>
+          <p className="text-muted-foreground mt-1 text-sm">Готовые рецептуры и комбинации ароматизаторов</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={selectAll}
+            className="text-xs text-muted-foreground hover:text-[hsl(var(--navy))] transition-colors border border-border px-3 py-1.5 rounded-sm"
+          >
+            Выбрать все
+          </button>
+          {selected.length > 0 && (
+            <>
+              <button
+                onClick={clearAll}
+                className="text-xs text-muted-foreground hover:text-[hsl(var(--navy))] transition-colors border border-border px-3 py-1.5 rounded-sm"
+              >
+                Снять выбор
+              </button>
+              <button
+                onClick={handleBatchDownload}
+                disabled={downloading}
+                className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--navy))] text-[hsl(var(--gold))] text-sm font-semibold rounded-sm hover:bg-[hsl(var(--navy-light))] transition-colors disabled:opacity-60"
+              >
+                <Icon name={downloading ? 'Loader' : 'FolderDown'} size={15} />
+                {downloading ? 'Формирование...' : `Скачать ZIP (${selected.length})`}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-6 animate-fade-in-up delay-100">
@@ -388,82 +457,123 @@ export default function RecipesSection() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filtered.map((recipe, i) => (
-          <div
-            key={recipe.id}
-            className="bg-white border border-border rounded-sm overflow-hidden animate-fade-in-up card-hover"
-            style={{ animationDelay: `${i * 0.05}s` }}
-          >
-            {/* Header */}
+        {filtered.map((recipe, i) => {
+          const isSelected = selected.includes(recipe.id);
+          return (
             <div
-              className="p-5 cursor-pointer"
-              onClick={() => setExpanded(expanded === recipe.id ? null : recipe.id)}
+              key={recipe.id}
+              className={`bg-white border rounded-sm overflow-hidden animate-fade-in-up card-hover transition-all ${isSelected ? 'border-[hsl(var(--gold))] shadow-sm' : 'border-border'}`}
+              style={{ animationDelay: `${i * 0.05}s` }}
             >
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                    <span className="section-label text-[10px]">{recipe.category}</span>
-                    <span className={`px-2 py-0.5 text-xs rounded-sm font-medium ${difficultyColors[recipe.difficulty]}`}>
-                      {recipe.difficulty}
-                    </span>
-                  </div>
-                  <h3 className="font-semibold text-[hsl(var(--navy))] text-base leading-tight">{recipe.name}</h3>
-                </div>
-                <Icon
-                  name={expanded === recipe.id ? 'ChevronUp' : 'ChevronDown'}
-                  size={18}
-                  className="text-muted-foreground shrink-0 mt-0.5"
-                />
-              </div>
-
-              <p className="text-sm text-muted-foreground leading-relaxed">{recipe.description}</p>
-
-              <div className="flex flex-wrap gap-1 mt-3">
-                {recipe.tags.map((t) => (
-                  <span key={t} className="px-1.5 py-0.5 bg-muted text-muted-foreground text-xs rounded-sm">{t}</span>
-                ))}
-              </div>
-            </div>
-
-            {/* Expanded */}
-            {expanded === recipe.id && (
-              <div className="border-t border-border bg-[hsl(var(--surface))] p-5 animate-fade-in-up">
-                <div className="mb-4">
-                  <div className="section-label text-[10px] mb-3">Состав рецептуры</div>
-                  <div className="space-y-2">
-                    {recipe.components.map((comp, j) => (
-                      <div key={j} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                        <div className="flex items-center gap-3">
-                          <div className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--gold))]" />
-                          <span className="font-medium text-[hsl(var(--navy))] text-sm">{comp.name}</span>
-                          <span className="text-xs text-muted-foreground">({comp.role})</span>
-                        </div>
-                        <span className="data-cell text-sm font-semibold text-[hsl(var(--navy))]">{comp.dosage}</span>
+              {/* Header */}
+              <div
+                className="p-5 cursor-pointer"
+                onClick={() => setExpanded(expanded === recipe.id ? null : recipe.id)}
+              >
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex-1 flex items-start gap-3">
+                    {/* Checkbox */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleSelect(recipe.id); }}
+                      className={`shrink-0 mt-0.5 w-5 h-5 rounded-sm border-2 flex items-center justify-center transition-colors ${isSelected ? 'bg-[hsl(var(--navy))] border-[hsl(var(--navy))]' : 'border-border hover:border-[hsl(var(--navy))]'}`}
+                    >
+                      {isSelected && <Icon name="Check" size={11} className="text-[hsl(var(--gold))]" />}
+                    </button>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                        <span className="section-label text-[10px]">{recipe.category}</span>
+                        <span className={`px-2 py-0.5 text-xs rounded-sm font-medium ${difficultyColors[recipe.difficulty]}`}>
+                          {recipe.difficulty}
+                        </span>
                       </div>
-                    ))}
+                      <h3 className="font-semibold text-[hsl(var(--navy))] text-base leading-tight">{recipe.name}</h3>
+                    </div>
                   </div>
+                  <Icon
+                    name={expanded === recipe.id ? 'ChevronUp' : 'ChevronDown'}
+                    size={18}
+                    className="text-muted-foreground shrink-0 mt-0.5"
+                  />
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                  <Icon name="Package" size={14} className="text-[hsl(var(--gold))]" />
-                  <span>Применение: {recipe.application}</span>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => exportRecipePDF(recipe)}
-                    className="flex-1 py-2 bg-[hsl(var(--navy))] text-[hsl(var(--gold))] text-sm font-semibold rounded-sm hover:bg-[hsl(var(--navy-light))] transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Icon name="Download" size={14} />
-                    Скачать PDF
-                  </button>
-                  <button className="flex-1 py-2 border border-[hsl(var(--navy)/0.3)] text-[hsl(var(--navy))] text-sm font-medium rounded-sm hover:bg-[hsl(var(--navy))] hover:text-[hsl(var(--gold))] transition-colors">
-                    Запросить документацию
-                  </button>
+
+                <p className="text-sm text-muted-foreground leading-relaxed pl-8">{recipe.description}</p>
+
+                <div className="flex flex-wrap gap-1 mt-3 pl-8">
+                  {recipe.tags.map((t) => (
+                    <span key={t} className="px-1.5 py-0.5 bg-muted text-muted-foreground text-xs rounded-sm">{t}</span>
+                  ))}
                 </div>
               </div>
-            )}
-          </div>
-        ))}
+
+              {/* Expanded */}
+              {expanded === recipe.id && (
+                <div className="border-t border-border bg-[hsl(var(--surface))] p-5 animate-fade-in-up">
+                  <div className="mb-4">
+                    <div className="section-label text-[10px] mb-3">Состав рецептуры</div>
+                    <div className="space-y-2">
+                      {recipe.components.map((comp, j) => (
+                        <div key={j} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                          <div className="flex items-center gap-3">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--gold))]" />
+                            <span className="font-medium text-[hsl(var(--navy))] text-sm">{comp.name}</span>
+                            <span className="text-xs text-muted-foreground">({comp.role})</span>
+                          </div>
+                          <span className="data-cell text-sm font-semibold text-[hsl(var(--navy))]">{comp.dosage}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                    <Icon name="Package" size={14} className="text-[hsl(var(--gold))]" />
+                    <span>Применение: {recipe.application}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => exportRecipePDF(recipe)}
+                      className="flex-1 py-2 bg-[hsl(var(--navy))] text-[hsl(var(--gold))] text-sm font-semibold rounded-sm hover:bg-[hsl(var(--navy-light))] transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Icon name="Download" size={14} />
+                      Скачать PDF
+                    </button>
+                    <button
+                      onClick={() => toggleSelect(recipe.id)}
+                      className={`flex-1 py-2 text-sm font-medium rounded-sm border transition-colors flex items-center justify-center gap-2 ${isSelected ? 'bg-[hsl(var(--gold)/0.1)] border-[hsl(var(--gold))] text-[hsl(var(--navy))]' : 'border-[hsl(var(--navy)/0.3)] text-[hsl(var(--navy))] hover:bg-[hsl(var(--navy)/0.05)]'}`}
+                    >
+                      <Icon name={isSelected ? 'CheckSquare' : 'Square'} size={14} />
+                      {isSelected ? 'В ZIP-архиве' : 'Добавить в ZIP'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
+
+      {/* Sticky batch bar */}
+      {selected.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-fade-in-up">
+          <div className="bg-[hsl(var(--navy))] rounded-sm shadow-2xl border border-[hsl(var(--gold)/0.3)] px-5 py-3 flex items-center gap-4">
+            <div className="text-white text-sm">
+              Выбрано: <span className="font-bold text-[hsl(var(--gold))]">{selected.length}</span> рецептур
+            </div>
+            <button
+              onClick={clearAll}
+              className="text-white/50 hover:text-white text-xs transition-colors"
+            >
+              Снять
+            </button>
+            <button
+              onClick={handleBatchDownload}
+              disabled={downloading}
+              className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--gold))] text-[hsl(var(--navy))] text-sm font-bold rounded-sm hover:bg-[hsl(var(--gold-light))] transition-colors disabled:opacity-60"
+            >
+              <Icon name={downloading ? 'Loader' : 'FolderDown'} size={15} />
+              {downloading ? 'Формирование...' : 'Скачать ZIP'}
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
