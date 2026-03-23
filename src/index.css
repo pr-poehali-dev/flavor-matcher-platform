@@ -4,89 +4,51 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 220 25% 97%;
+    --foreground: 218 35% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 218 35% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 218 35% 10%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 220 60% 18%;
+    --primary-foreground: 45 80% 72%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 220 20% 92%;
+    --secondary-foreground: 218 35% 15%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 15% 94%;
+    --muted-foreground: 218 15% 50%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 45 80% 55%;
+    --accent-foreground: 220 60% 12%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 220 20% 88%;
+    --input: 220 20% 88%;
+    --ring: 220 60% 18%;
 
-    --radius: 0.5rem;
+    --radius: 0.25rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
-  }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Custom palette */
+    --navy: 220 60% 18%;
+    --navy-light: 220 45% 25%;
+    --gold: 45 80% 55%;
+    --gold-light: 45 85% 70%;
+    --surface: 220 25% 97%;
   }
 }
 
@@ -96,6 +58,127 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-ibm;
+    font-feature-settings:
+      "kern" 1,
+      "liga" 1;
+  }
+}
+
+@layer utilities {
+  .font-ibm {
+    font-family: "IBM Plex Sans", sans-serif;
+  }
+  .font-mono-ibm {
+    font-family: "IBM Plex Mono", monospace;
+  }
+
+  .gold-line {
+    border-left: 3px solid hsl(var(--gold));
+  }
+
+  .nav-underline {
+    position: relative;
+  }
+  .nav-underline::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: hsl(var(--gold));
+    transition: width 0.25s ease;
+  }
+  .nav-underline:hover::after,
+  .nav-underline.active::after {
+    width: 100%;
+  }
+
+  .data-cell {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
+  }
+
+  .tag-organic {
+    background: hsl(140 40% 90%);
+    color: hsl(140 50% 25%);
+    border: 1px solid hsl(140 40% 75%);
+  }
+  .tag-synthetic {
+    background: hsl(220 40% 92%);
+    color: hsl(220 50% 30%);
+    border: 1px solid hsl(220 40% 78%);
+  }
+  .tag-nature {
+    background: hsl(35 60% 90%);
+    color: hsl(35 60% 30%);
+    border: 1px solid hsl(35 55% 75%);
+  }
+
+  .hero-grid {
+    background-image:
+      linear-gradient(hsl(220 60% 18% / 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(220 60% 18% / 0.06) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .card-hover {
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      border-color 0.2s ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px hsl(220 60% 18% / 0.12);
+    border-color: hsl(var(--gold));
+  }
+
+  .filter-chip {
+    @apply px-3 py-1.5 text-sm border rounded-sm cursor-pointer transition-all duration-200;
+    border-color: hsl(var(--border));
+    color: hsl(var(--muted-foreground));
+  }
+  .filter-chip:hover,
+  .filter-chip.active {
+    background: hsl(var(--navy));
+    color: hsl(var(--gold));
+    border-color: hsl(var(--navy));
+  }
+
+  .section-label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: hsl(var(--gold));
+  }
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-fade-in-up {
+    animation: fade-in-up 0.45s ease both;
+  }
+  .delay-100 {
+    animation-delay: 0.1s;
+  }
+  .delay-200 {
+    animation-delay: 0.2s;
+  }
+  .delay-300 {
+    animation-delay: 0.3s;
+  }
+  .delay-400 {
+    animation-delay: 0.4s;
   }
 }
