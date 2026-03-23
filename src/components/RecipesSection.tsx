@@ -200,6 +200,50 @@ const recipes: Recipe[] = [
     difficulty: 'Базовый',
     tags: ['миндаль', 'марципан', 'ореховый', 'сладкий'],
   },
+
+  // Кофейные
+  {
+    id: 14,
+    name: 'Классический эспрессо',
+    category: 'Кофейные',
+    description: 'Насыщенный аромат двойного эспрессо с горьким финишем. Для кофейного мороженого и молочных напитков.',
+    components: [
+      { name: 'Экстракт эспрессо', dosage: '0.30%', role: 'Кофейная основа' },
+      { name: 'Фурфурилмеркаптан', dosage: '0.0003%', role: 'Свежесваренный акцент' },
+      { name: 'Ванилин', dosage: '0.015%', role: 'Карамельный фон' },
+    ],
+    application: 'Мороженое, молочные напитки, десерты',
+    difficulty: 'Сложный',
+    tags: ['кофе', 'эспрессо', 'горький', 'насыщенный'],
+  },
+  {
+    id: 15,
+    name: 'Капучино',
+    category: 'Кофейные',
+    description: 'Мягкая кофейно-молочная рецептура с лёгкой сладостью. Воспроизводит аромат классического капучино.',
+    components: [
+      { name: 'Экстракт кофе натуральный', dosage: '0.25%', role: 'Кофейная основа' },
+      { name: 'Экстракт сливок', dosage: '0.20%', role: 'Молочный фон' },
+      { name: '2-Фурфурилацетат', dosage: '0.010%', role: 'Карамельность' },
+    ],
+    application: 'Молочные напитки, йогурты, конфеты',
+    difficulty: 'Средний',
+    tags: ['кофе', 'сливки', 'молочный', 'карамельный'],
+  },
+  {
+    id: 16,
+    name: 'Холодный брю',
+    category: 'Кофейные',
+    description: 'Деликатный кофейный профиль с фруктовыми нотами. Характерен для холодного заваривания specialty-кофе.',
+    components: [
+      { name: 'Экстракт кофе натуральный', dosage: '0.40%', role: 'Кофейная основа' },
+      { name: 'Тригонеллин', dosage: '0.04%', role: 'Горький акцент' },
+      { name: 'Лимонная эссенция', dosage: '0.02%', role: 'Цитрусовая нота' },
+    ],
+    application: 'RTD-напитки, кофейные концентраты',
+    difficulty: 'Средний',
+    tags: ['кофе', 'свежий', 'фруктовый', 'деликатный'],
+  },
 ];
 
 const difficultyColors: Record<string, string> = {
@@ -207,6 +251,118 @@ const difficultyColors: Record<string, string> = {
   'Средний': 'bg-amber-50 text-amber-700 border border-amber-200',
   'Сложный': 'bg-red-50 text-red-700 border border-red-200',
 };
+
+function exportRecipePDF(recipe: Recipe) {
+  const date = new Date().toLocaleDateString('ru-RU');
+  const html = `
+    <!DOCTYPE html>
+    <html lang="ru">
+    <head>
+      <meta charset="UTF-8"/>
+      <title>Рецептура — ${recipe.name}</title>
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'IBM Plex Sans', sans-serif; color: #0f1c35; background: #fff; padding: 48px; font-size: 13px; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; border-bottom: 3px solid #0f1c35; margin-bottom: 28px; }
+        .logo { font-size: 20px; font-weight: 700; }
+        .logo span { color: #c9a84c; }
+        .meta { text-align: right; font-size: 11px; color: #7a8399; font-family: 'IBM Plex Mono', monospace; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 2px; font-size: 11px; font-weight: 600; margin-right: 6px; }
+        .badge-cat { background: #eef2ff; color: #3a52a8; border: 1px solid #c7d2f8; }
+        .badge-diff-base { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        .badge-diff-mid  { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+        .badge-diff-hard { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        h1 { font-size: 26px; font-weight: 700; margin: 10px 0 6px; }
+        .desc { color: #4a5568; line-height: 1.6; margin-bottom: 24px; }
+        .section-title { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #c9a84c; margin-bottom: 10px; margin-top: 24px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; background: #0f1c35; color: #fff; padding: 8px 12px; font-size: 11px; font-weight: 600; letter-spacing: .05em; }
+        th.gold { color: #c9a84c; }
+        td { padding: 9px 12px; border-bottom: 1px solid #e8edf5; font-size: 12.5px; }
+        tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) td { background: #f8f9fc; }
+        .dosage { font-family: 'IBM Plex Mono', monospace; font-weight: 600; color: #0f1c35; }
+        .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .tag { padding: 3px 8px; background: #f1f3f8; color: #5a6a8a; border-radius: 2px; font-size: 11px; }
+        .app-row { display: flex; align-items: center; gap: 8px; margin-top: 20px; padding: 12px 14px; background: #f8f9fc; border-left: 3px solid #c9a84c; }
+        .app-label { font-size: 11px; color: #7a8399; text-transform: uppercase; letter-spacing: .08em; }
+        .app-val { font-weight: 600; font-size: 13px; }
+        .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e8edf5; display: flex; justify-content: space-between; font-size: 11px; color: #9aa3b8; font-family: 'IBM Plex Mono', monospace; }
+        .disclaimer { margin-top: 14px; font-size: 10.5px; color: #9aa3b8; line-height: 1.5; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div>
+          <div class="logo">Aroma<span>Select</span></div>
+          <div style="font-size:10px;color:#9aa3b8;margin-top:2px;">Платформа подбора пищевых ароматизаторов</div>
+        </div>
+        <div class="meta">
+          <div>Дата: ${date}</div>
+          <div>Тип документа: Рецептурная карта</div>
+        </div>
+      </div>
+
+      <div>
+        <div>
+          <span class="badge badge-cat">${recipe.category}</span>
+          <span class="badge ${recipe.difficulty === 'Базовый' ? 'badge-diff-base' : recipe.difficulty === 'Средний' ? 'badge-diff-mid' : 'badge-diff-hard'}">${recipe.difficulty}</span>
+        </div>
+        <h1>${recipe.name}</h1>
+        <p class="desc">${recipe.description}</p>
+      </div>
+
+      <div class="section-title">Состав рецептуры</div>
+      <table>
+        <thead>
+          <tr>
+            <th>№</th>
+            <th>Ароматизатор</th>
+            <th>Функциональная роль</th>
+            <th class="gold">Дозировка</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${recipe.components.map((c, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td><strong>${c.name}</strong></td>
+              <td>${c.role}</td>
+              <td class="dosage">${c.dosage}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <div class="section-title">Профиль аромата</div>
+      <div class="tags">
+        ${recipe.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+      </div>
+
+      <div class="app-row">
+        <div>
+          <div class="app-label">Рекомендованное применение</div>
+          <div class="app-val">${recipe.application}</div>
+        </div>
+      </div>
+
+      <p class="disclaimer">* Дозировки указаны как рекомендованные. Окончательные параметры определяются технологом с учётом состава продукта, условий производства и требований нормативной документации. Все ароматизаторы должны применяться в соответствии с ГОСТ Р 52177-2003 и действующим законодательством.</p>
+
+      <div class="footer">
+        <span>AromaSelect © ${new Date().getFullYear()}</span>
+        <span>Документ сформирован автоматически · aromaselect.ru</span>
+      </div>
+    </body>
+    </html>
+  `;
+  const win = window.open('', '_blank');
+  if (!win) return;
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { win.print(); }, 600);
+}
 
 export default function RecipesSection() {
   const [activeCategory, setActiveCategory] = useState('Все');
@@ -287,13 +443,22 @@ export default function RecipesSection() {
                     ))}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
                   <Icon name="Package" size={14} className="text-[hsl(var(--gold))]" />
                   <span>Применение: {recipe.application}</span>
                 </div>
-                <button className="mt-4 w-full py-2 border border-[hsl(var(--navy)/0.3)] text-[hsl(var(--navy))] text-sm font-medium rounded-sm hover:bg-[hsl(var(--navy))] hover:text-[hsl(var(--gold))] transition-colors">
-                  Запросить техническую документацию
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => exportRecipePDF(recipe)}
+                    className="flex-1 py-2 bg-[hsl(var(--navy))] text-[hsl(var(--gold))] text-sm font-semibold rounded-sm hover:bg-[hsl(var(--navy-light))] transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Icon name="Download" size={14} />
+                    Скачать PDF
+                  </button>
+                  <button className="flex-1 py-2 border border-[hsl(var(--navy)/0.3)] text-[hsl(var(--navy))] text-sm font-medium rounded-sm hover:bg-[hsl(var(--navy))] hover:text-[hsl(var(--gold))] transition-colors">
+                    Запросить документацию
+                  </button>
+                </div>
               </div>
             )}
           </div>
